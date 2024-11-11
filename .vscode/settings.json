@@ -1,0 +1,7 @@
+{
+	"python.testing.pytestArgs": [
+		"Gómez-Cano-Daniel-Aarón"
+	],
+	"python.testing.unittestEnabled": false,
+	"python.testing.pytestEnabled": true
+}
