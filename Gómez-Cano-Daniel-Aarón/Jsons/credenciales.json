@@ -1,0 +1,16 @@
+{
+    "base_de_datos": {
+        "nombre": "static_config",
+        "user": "admin",
+        "password": "admin",
+        "puerto": 2222
+    },
+    "cuentas_de_sistemas": [
+        {
+            "sistema": "VM_host",
+            "user": "admin",
+            "password": "admin",
+            "host": "127.0.0.1"
+        }
+    ]
+}
