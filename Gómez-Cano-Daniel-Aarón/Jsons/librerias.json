@@ -1,0 +1,9 @@
+{
+    "librerias": [
+        "netmiko",
+        "os",
+        "scp",
+        "subprocess",
+        "sys"
+    ]
+}
