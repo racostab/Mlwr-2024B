@@ -35,6 +35,7 @@ class Docker:
             try:
                 print("Retrieving docker container ... ")
                 self.slContainer = self.dockerClient.containers.get("myStaticLab")
+                self.slContainer.start()
                 self.slContainerRetrieved = True
             except docker.errors.NotFound:
                 print("Container does not exists. Running docker container ...")
