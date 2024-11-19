@@ -1,0 +1,7 @@
+{
+    "hashes":1,
+    "string":1,
+    "headers":1,
+    "asm": ["objdump"],
+    "opcodes": 1
+}

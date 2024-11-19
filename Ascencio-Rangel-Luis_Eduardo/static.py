@@ -6,8 +6,63 @@
 from netmiko import Netmiko
 from scp import SCPClient
 from subprocess import check_output
+
+import docker
 import os
 import sys
+import tarfile
+from time import sleep
+
+class Docker:
+    
+    def __init__(self):
+        self.dockerClient = docker.from_env()
+        
+        try:
+            self.dockerClient.images.get("static_lab")            
+        except docker.errors.ImageNotFound:
+            try:
+                print("Building docker image ...")
+                #self.dockerClient.images.build(path="./", tag="static_lab:latest", pull=True)
+                check_output("docker build -t static_lab:latest .")
+                print("Image built successfully")
+            except Exception as e:
+                print(f"An error occurred building the docker image: {e}")
+        except:
+            print("An error occurred while getting the docker image")
+            
+        finally:
+            try:
+                print("Retrieving docker container ... ")
+                self.slContainer = self.dockerClient.containers.get("myStaticLab")
+                self.slContainerRetrieved = True
+            except docker.errors.NotFound:
+                print("Container does not exists. Running docker container ...")
+                self.slContainer = self.dockerClient.containers.run("static_lab", detach=True, ports={'22' : '2222'}, name="myStaticLab")
+                self.slContainerRetrieved = False
+            except:
+                print("An error occurred trying to run the docker container")
+                
+    def getOutput(self,counter: int):
+        archive,stat = self.slContainer.get_archive("/home/" + myVM.username + "/static")
+        
+        output_dir = "./experimentos"
+        output_tar_path = os.path.join(output_dir,str(counter)+".tar")
+        
+        with open(output_tar_path, "wb") as f:
+            for chunk in archive:
+                f.write(chunk)
+                
+        with tarfile.open(output_tar_path, "r") as tar:
+            tar.extractall(path=output_dir+'/'+str(counter))
+            
+        os.remove(output_tar_path)
+        
+    def stopContainer(self):
+        try:
+            self.slContainer.stop()
+        except:
+            print("An error stopping the running container has occured.")
 
 class VM:
     
@@ -28,97 +83,45 @@ class VM:
         self.net_connect = None
 
     def connect(self):
+        sleep(5)
         self.net_connect = Netmiko(**self.vm)
 
     def run_command(self, command):
         output = self.net_connect.send_command(command)
         return output
     
-    def send_files(self, mlwrFile):
-        self.mlwrFile = mlwrFile.split("/")[-1] if '/' in mlwrFile else mlwrFile.split("\\")[-1]
+    def send_files(self, files):
+        self.mlwrFile = files[0].split("/")[-1] if '/' in files[0] else files[0].split("\\")[-1]
         
         try:
             with SCPClient(self.net_connect.remote_conn.get_transport()) as scp:
-                scp.put(mlwrFile, f"/home/{self.username}/")
+                for file in files:
+                    scp.put(file, f"/home/{self.username}/")
                 
             print(f"\nAnalyzing \"{self.mlwrFile}\" ...")
         except:
             print("An error has occured while sending the file to the container.")
-            
-    def get_hashes(self):
-        print("\nHashes:")
-        # md5sum
-        print(f"$: md5sum: {self.run_command(f'md5sum {self.mlwrFile}')}")
-        
-        # sha1sum
-        print(f"$: sha1sum: {self.run_command(f'sha1sum {self.mlwrFile}')}")
-        
-        # sha256sum
-        print(f"$: sha256sum: {self.run_command(f'sha256sum {self.mlwrFile}')}")
-        
-        # ssdeep
-        print(f"$: ssdeep: {self.run_command(f'ssdeep {self.mlwrFile}')}")
-        
-    
-class Docker:
-    
-    dockerFile = ("FROM ubuntu:latest\n"
-                "RUN apt-get update && \\\n"
-                "    apt install -y openssh-server && \\\n"
-                "    mkdir /var/run/sshd\n"
-                
-                "RUN apt install -y \\\n"
-                "    file \\\n"
-                "    exiftool \\\n"
-                "    ssdeep \\\n"
-                "    git \\\n"
-                "    build-essential\n"
-                    
-
-                "RUN git clone https://github.com/radareorg/radare2 &&\\\n"
-                "    cd radare2 ; sys/install.sh\n"
-
-                "RUN useradd -m admin && echo \"admin:admin\" | chpasswd && \\\n"
-                "    mkdir -p /home/admin/.ssh && \\\n"
-                "    chown -R admin:admin /home/admin/.ssh\n"
-                
-                "WORKDIR $HOME\n"
-
-                "RUN sed -i \'s/#PermitRootLogin prohibit-password/PermitRootLogin yes/\' /etc/ssh/sshd_config\n"
-                "RUN echo \"StrictHostKeyChecking no\" >> /etc/ssh/ssh_config\n"
-
-                "EXPOSE 22\n"
-
-                "CMD [\"/usr/sbin/sshd\", \"-D\"]")
-    
-    def __init__(self):
-        try:
-            if not os.path.exists("Dockerfile"):
-                f = open("Dockerfile", 'w')
-                f.write(self.dockerFile)
-                f.close()
-                
-                print("Building Dockerfile ...")
-                check_output("docker build -t static_lab .")
-                
-            print("Running docker container ...")
-            output = check_output("docker run -d -p 2222:22 static_lab")
-            self.id = output.decode("utf-8").strip()
-            
-        except:
-            print("emm")
-        
-    def stopContainer(self):
-        try:
-            print(self.id)
-            check_output(f"docker stop {self.id}")
-        except:
-            print("An error stopping the running container has occured.")
 
 if __name__ == '__main__':
     myDocker = Docker()
+    
     myVM = VM()
     myVM.connect()
-    myVM.send_files(sys.argv[1])
-    myVM.get_hashes()
+    
+    myVM.run_command("pip install -r requirements.txt")    
+    if myDocker.slContainerRetrieved:
+        myVM.send_files([sys.argv[1], "./config/config_static.json"])
+    else:
+        myVM.send_files([sys.argv[1], "./config/config_static.json", "./staticLab/staticLab_containerCommands.py"])
+    myVM.run_command(f"/opt/venv/bin/python3 staticLab_containerCommands.py {myVM.mlwrFile}")
+    
+    
+    if not os.path.exists("./experimentos"):
+        os.mkdir("./experimentos")
+        
+    counter = 1
+    for file in os.listdir("./experimentos"):
+        counter+=1
+    
+    myDocker.getOutput(counter)
     myDocker.stopContainer()
