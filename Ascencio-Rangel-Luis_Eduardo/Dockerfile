@@ -12,10 +12,16 @@ RUN apt install -y \
     build-essential \
     python3-pip \
     python3-venv \
-    python3
+    python3 \
+    zip \
+    yara \
+    upx
 
 RUN git clone https://github.com/radareorg/radare2 &&\
     cd radare2 ; sys/install.sh
+
+RUN wget https://github.com/YARAHQ/yara-forge/releases/latest/download/yara-forge-rules-full.zip && \
+    unzip yara-forge-rules-full.zip
 
 RUN useradd -m admin && echo "admin:admin" | chpasswd && \
     mkdir -p /home/admin/.ssh && \

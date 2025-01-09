@@ -1,0 +1,17 @@
+{
+    "vt-apikey":"551dfa1018087060fce269e636a8ab7b82b6ee8766ed7e38b1bd060b4a9398c7",
+    "vboxmanage-path": "D:\\VirtualBox",
+    "docker-credentials":{
+        "username": "admin",
+        "password": "admin",
+        "port": 2222,
+        "host": "127.0.0.1" 
+    },
+    "vbox-dynamic": {
+        "path": "D:\\VirtualBox",
+        "cpus": "2",
+        "ram": "4096",
+        "diskspace": "10240",
+        "basepath": "./vms"
+    }
+}

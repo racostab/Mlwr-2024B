@@ -2,6 +2,8 @@
     "hashes":1,
     "string":1,
     "headers":1,
-    "asm": ["objdump"],
+    "libraries":1,
+    "yara":1,
+    "asm": ["objdump", "radare2"],
     "opcodes": 1
 }
