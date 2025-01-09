@@ -1,14 +1,15 @@
 
 # Static and Dynamic Malware Lab Analysis
 
-Malware detection lab using Python, Docker and VMs (VBox) 
+Malware detection lab using Python, Docker, and VMs (VBox) 
 
 
 ## Set up
 
-Before running this project, make sure to download the base virtual box image from my personal drive link (put it under the main project directory inside a folder named "vms").
+Before running this project, download the base virtual box image from my drive link (put it under the main project directory inside a folder named "vms").
 https://drive.google.com/drive/folders/1doAcXIcFaH_D8wOTpyKCMzwbP9QP9P6w?usp=sharing
 
+*Ensure you have Docker Engine installed and running before using the lab!*
 
 ## Run Locally
 
